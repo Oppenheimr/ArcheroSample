@@ -9,7 +9,7 @@ namespace Data
     {
         [Header("Entities")]
         public ParticleSystem exampleData;
-        
+        public Transform defaultBullet;
         
 #if UNITY_EDITOR
         [MenuItem("Custom/Assets/Game Data")]

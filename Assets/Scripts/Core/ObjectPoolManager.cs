@@ -8,6 +8,8 @@ namespace Core
     {
         #region Key Fields
         private int _examplePoolKey;
+        private int _bulletPoolKey;
+        private int _enemyBulletPoolKey;
         #endregion
         
         private void OnEnable()
@@ -25,6 +27,7 @@ namespace Core
 
             #region Pool Create
             _examplePoolKey = ObjectPooler.CreatePool(GameData.Instance.exampleData);
+            _bulletPoolKey = ObjectPooler.CreatePool(GameData.Instance.defaultBullet);
             #endregion
         }
 
@@ -38,6 +41,9 @@ namespace Core
         
         public static void PutPoolExample(Transform reference) => 
             ObjectPooler.PutPoolObject(Instance._examplePoolKey, reference);
+        
+        public static Component GetBulletPool() => ObjectPooler.GetPoolObject(Instance._enemyBulletPoolKey);
+        
         #endregion
         
         private void OnDisable()
