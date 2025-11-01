@@ -20,6 +20,7 @@ namespace Core
         
         
         public static readonly UnityEvent OnEnemyDie = new();
+        public static readonly UnityEvent<int, bool> OnSkillSelected = new();
         #endregion
 
         #region Event Methods
@@ -38,6 +39,8 @@ namespace Core
         public static void OnUnitPurchasedEvent(int unitId) => OnUnitPurchased?.Invoke(unitId);
         
         public static void OnEnemyDieEvent() => OnEnemyDie?.Invoke();
+        public static void OnSkillSelectedEvent(int skillId, bool isSelected) => OnSkillSelected?.Invoke(skillId, isSelected);
+        
         #endregion
         
         public static void Reset()
@@ -56,6 +59,7 @@ namespace Core
             OnUnitPurchased.RemoveAllListeners();
             
             OnEnemyDie.RemoveAllListeners();
+            OnSkillSelected.RemoveAllListeners();
         }
     }
 }

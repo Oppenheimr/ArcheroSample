@@ -45,6 +45,8 @@ namespace UnityUtils.BaseClasses.UI
             startPos = transform.localPosition;
             startScale = transform.localScale;
             Group.alpha = _fullTransparency;
+            Group.interactable = false;
+            Group.blocksRaycasts = false;
             if (_startTest)
                 ShowPanel();
         }
