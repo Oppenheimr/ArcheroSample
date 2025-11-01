@@ -6,7 +6,7 @@ namespace UnityUtils.BaseClasses
 {
     public class SingletonBehavior : MonoBehaviour
     {
-        protected void Awake()
+        protected virtual void Awake()
         {
             if (FindObjectsOfType(GetType()).Length <= 1) 
                 return;

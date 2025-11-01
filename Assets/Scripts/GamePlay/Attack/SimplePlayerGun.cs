@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections;
 using Core;
+using Data;
 using GamePlay.Player;
+using GamePlay.Skill;
 using UnityEngine;
 using UnityUtils.Attribute;
 
@@ -21,41 +23,63 @@ namespace GamePlay.Attack
         
         public static int BulletPoolKey;
         
+        private Coroutine _loop;
+
         protected virtual void OnEnable()
         {
-            StartCoroutine(ShootLoop());
+            if (_loop != null) StopCoroutine(_loop);
+            _loop = StartCoroutine(ShootLoop());
             BulletPoolKey = ObjectPooler.CreatePool(_bomb, 50);
         }
-        
+
         private IEnumerator ShootLoop()
         {
             while (true)
             {
-                yield return new WaitForSeconds(_fireDelay);
-                if (!_controller.FireCondition)
+                // UI’daki durumdan AttackContext’i oluştur
+                var ctx = SkillManager.Instance.CreateContext(baseDamage, _fireDelay, baseBulletSpeed, _angle);
+
+                yield return new WaitForSeconds(ctx.FireDelay);
+
+                if (!_controller.FireCondition || !fire)
                     continue;
-                
-                Shoot();
+
+                ShootWithContext(ctx);
             }
         }
 
-        private void Shoot()
+        private void ShootWithContext(AttackContext ctx)
         {
-            if (!fire)
-                return;
-            
-            var insBullet = (Bomb)ObjectPooler.GetPoolObject(BulletPoolKey);
-            insBullet.transform.position = _firePoint.position;
-            insBullet.transform.rotation = _firePoint.rotation;
-            var position = insBullet.transform.position;
-            var targetPosition = _controller.target.transform.position;
-            float height = position.y - targetPosition.y;
-            float horizontalDistance = Vector3.Distance(targetPosition, new Vector3(position.x, targetPosition.y, position.z));
+            // ctx.Shots kadar mermi; istersen hafif açı sapması verebilirsin
+            for (int i = 0; i < ctx.Shots; i++)
+            {
+                var insBullet = (Bomb)ObjectPooler.GetPoolObject(BulletPoolKey);
+                insBullet.transform.position = _firePoint.position;
+                insBullet.transform.rotation = _firePoint.rotation;
 
-            insBullet.rigid.linearVelocity = Direction(targetPosition) * (float)CalculateSpeed(height, horizontalDistance, _angle, -Physics.gravity.y);
-            insBullet.Setup(baseDamage);
+                var position = insBullet.transform.position;
+                var targetPos = _controller.target.transform.position;
+
+                float height = position.y - targetPos.y;
+                float horiz = Vector3.Distance(targetPos, new Vector3(position.x, targetPos.y, position.z));
+
+                var dir = Direction(targetPos);
+                float speed = (float)CalculateSpeed(height, horiz, ctx.Angle, -Physics.gravity.y);
+                insBullet.rigid.linearVelocity = dir * speed;
+
+                // Bomb’a runtime efektleri ver
+                var runtime = new BulletRuntime
+                {
+                    BounceLeft = ctx.BounceCount,
+                    BurnDuration = ctx.BurnDuration,
+                    BurnDps = ctx.BurnDps,
+                    CurrentOrigin = _firePoint,
+                    Rigidbody = insBullet.rigid
+                };
+                insBullet.Setup(ctx.BaseDamage, runtime, ctx.BulletEffects);
+            }
         }
-
+        
         public static double CalculateSpeed(double height, double horizontalDistance, double angle, double gravity)
         {
             angle = angle * Mathf.Deg2Rad; // Açıyı dereceden radyana çevir
