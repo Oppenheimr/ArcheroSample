@@ -37,46 +37,56 @@ namespace GamePlay.Attack
             while (true)
             {
                 // UI’daki durumdan AttackContext’i oluştur
-                var ctx = SkillManager.Instance.CreateContext(baseDamage, _fireDelay, baseBulletSpeed, _angle);
+                var context = SkillManager.Instance.CreateContext(baseDamage, _fireDelay, baseBulletSpeed, _angle);
 
-                yield return new WaitForSeconds(ctx.FireDelay);
+                yield return new WaitForSeconds(context.FireDelay);
 
                 if (!_controller.FireCondition || !fire)
                     continue;
 
-                ShootWithContext(ctx);
+                ShootWithContext(context);
             }
         }
 
-        private void ShootWithContext(AttackContext ctx)
+        private void ShootWithContext(AttackContext context)
         {
-            // ctx.Shots kadar mermi; istersen hafif açı sapması verebilirsin
-            for (int i = 0; i < ctx.Shots; i++)
+            float spacing = 0.4f;
+            int shotCount = context.Shots;
+            float totalWidth = (shotCount - 1) * spacing;
+            float halfWidth = totalWidth / 2f;
+
+            for (int i = 0; i < shotCount; i++)
             {
+                float offset = (i * spacing) - halfWidth;
+                Vector3 spawnPos = _firePoint.position + _firePoint.right * offset;
+
                 var insBullet = (Bomb)ObjectPooler.GetPoolObject(BulletPoolKey);
-                insBullet.transform.position = _firePoint.position;
+                insBullet.transform.position = spawnPos;
                 insBullet.transform.rotation = _firePoint.rotation;
 
-                var position = insBullet.transform.position;
-                var targetPos = _controller.target.transform.position;
+                // 🔹 Balistik hız vektörü helper’dan
+                Vector3 v0 = ProjectileHelper.ComputeBallisticVelocity(
+                    origin: spawnPos,
+                    target: _controller.target.transform.position,
+                    angleDeg: context.Angle,
+                    gravityPos: -Physics.gravity.y
+                );
 
-                float height = position.y - targetPos.y;
-                float horiz = Vector3.Distance(targetPos, new Vector3(position.x, targetPos.y, position.z));
+                insBullet.bombRigid.linearVelocity = v0;
 
-                var dir = Direction(targetPos);
-                float speed = (float)CalculateSpeed(height, horiz, ctx.Angle, -Physics.gravity.y);
-                insBullet.rigid.linearVelocity = dir * speed;
-
-                // Bomb’a runtime efektleri ver
                 var runtime = new BulletRuntime
                 {
-                    BounceLeft = ctx.BounceCount,
-                    BurnDuration = ctx.BurnDuration,
-                    BurnDps = ctx.BurnDps,
-                    CurrentOrigin = _firePoint,
-                    Rigidbody = insBullet.rigid
+                    bounceLeft = context.BounceCount,
+                    burnDuration = context.BurnDuration,
+                    burnDamagePerSecond = context.BurnDps,
+                    currentOrigin = _firePoint,
+                    rigidbody = insBullet.bombRigid,
+                    collider = insBullet.bombCollider,
+                    angle = _angle
                 };
-                insBullet.Setup(ctx.BaseDamage, runtime, ctx.BulletEffects);
+
+                insBullet.bombCollider.isTrigger = false;
+                insBullet.Setup(context.BaseDamage, runtime, context.BulletEffects);
             }
         }
         

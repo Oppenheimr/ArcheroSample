@@ -149,4 +149,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5ce2e14707742d3a9bd5cd5b9b80c64, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rigid: {fileID: 6132811417905304669}
+  bombRigid: {fileID: 6132811417905304669}
+  bombCollider: {fileID: 828075352522978232}

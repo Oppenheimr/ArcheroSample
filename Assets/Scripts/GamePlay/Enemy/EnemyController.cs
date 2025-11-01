@@ -1,4 +1,5 @@
 using Core;
+using GamePlay.Attack;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityUtils.Attribute;
@@ -26,6 +27,9 @@ namespace GamePlay.Enemy
             transform.position = spawnPosition;
             _currentHealth = _maxHealth;
             _healthBar.value = _currentHealth;
+            
+            if (gameObject.TryGetComponent(out BurnComponent burn))
+                Destroy(burn);
         }
         
         public void TakeDamage(float damage)

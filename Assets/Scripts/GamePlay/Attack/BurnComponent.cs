@@ -1,35 +1,43 @@
+using GamePlay.Enemy;
 using UnityEngine;
 
 namespace GamePlay.Attack
 {
     public class BurnComponent : MonoBehaviour
     {
-        private float _dpsAccumulated;
+        private EnemyController _controller;
+        private float _damagePerSecondAccumulated;
         private float _timeLeft;
 
-        public void Apply(float dps, float duration)
+        public void Apply(float damagePerSecond, float duration)
         {
             // Stack’lenebilir: DPS toplanır, süre büyük olanı al
-            _dpsAccumulated += dps;
+            _damagePerSecondAccumulated += damagePerSecond;
             _timeLeft = Mathf.Max(_timeLeft, duration);
             enabled = true;
+
+            _controller = GetComponent<EnemyController>();
         }
 
         private void Update()
         {
+            if (!_controller.IsAlive)
+            {
+                _damagePerSecondAccumulated = 0f;
+                enabled = false;
+                return;
+            }
+            
             if (_timeLeft <= 0f)
             {
-                _dpsAccumulated = 0f;
+                _damagePerSecondAccumulated = 0f;
                 enabled = false;
                 return;
             }
 
-            float dt = Time.deltaTime;
-            _timeLeft -= dt;
-
-            float damageThisFrame = _dpsAccumulated * dt;
-            var enemy = GetComponent<GamePlay.Enemy.EnemyController>();
-            if (enemy) enemy.TakeDamage(damageThisFrame);
+            
+            _timeLeft -= Time.deltaTime;
+            _controller.TakeDamage(_damagePerSecondAccumulated * Time.deltaTime);
         }
     }
 }
