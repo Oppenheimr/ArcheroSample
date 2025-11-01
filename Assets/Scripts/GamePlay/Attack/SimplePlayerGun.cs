@@ -3,10 +3,9 @@ using System.Collections;
 using Core;
 using GamePlay.Player;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityUtils.Attribute;
 
-namespace GamePlay.Gun
+namespace GamePlay.Attack
 {
     public class SimplePlayerGun : MonoBehaviour
     {
@@ -16,14 +15,16 @@ namespace GamePlay.Gun
         
         [SerializeField, AutoAssign] private PlayerController _controller;
         [SerializeField] private Transform _firePoint;
-        [SerializeField] private Rigidbody _bulletPrefab;
-        [SerializeField] private float _idleLimit = 1.5f;
+        [SerializeField] private Bomb _bomb;
         [SerializeField] private float _fireDelay = 2.3f;
         [SerializeField] private float _angle = 45;
+        
+        public static int BulletPoolKey;
         
         protected virtual void OnEnable()
         {
             StartCoroutine(ShootLoop());
+            BulletPoolKey = ObjectPooler.CreatePool(_bomb, 50);
         }
         
         private IEnumerator ShootLoop()
@@ -31,7 +32,7 @@ namespace GamePlay.Gun
             while (true)
             {
                 yield return new WaitForSeconds(_fireDelay);
-                if (!FireCondition)
+                if (!_controller.FireCondition)
                     continue;
                 
                 Shoot();
@@ -43,14 +44,16 @@ namespace GamePlay.Gun
             if (!fire)
                 return;
             
-            var insBullet = Instantiate(_bulletPrefab, _firePoint.position, _firePoint.rotation);
-            
+            var insBullet = (Bomb)ObjectPooler.GetPoolObject(BulletPoolKey);
+            insBullet.transform.position = _firePoint.position;
+            insBullet.transform.rotation = _firePoint.rotation;
             var position = insBullet.transform.position;
-            var targetPosition = _controller.target.position;
+            var targetPosition = _controller.target.transform.position;
             float height = position.y - targetPosition.y;
             float horizontalDistance = Vector3.Distance(targetPosition, new Vector3(position.x, targetPosition.y, position.z));
 
-            insBullet.linearVelocity = Direction(targetPosition) * (float)CalculateSpeed(height, horizontalDistance, _angle, -Physics.gravity.y);
+            insBullet.rigid.linearVelocity = Direction(targetPosition) * (float)CalculateSpeed(height, horizontalDistance, _angle, -Physics.gravity.y);
+            insBullet.Setup(baseDamage);
         }
 
         public static double CalculateSpeed(double height, double horizontalDistance, double angle, double gravity)
@@ -83,17 +86,6 @@ namespace GamePlay.Gun
             Vector3 rotatedVector = rotation * vector;
 
             return rotatedVector;
-        }
-        
-        private bool FireCondition
-        {
-            get
-            {
-                if (!_controller)
-                    return false;
-                
-                return _controller.idleCounter > _idleLimit;
-            }
         }
     }
 }

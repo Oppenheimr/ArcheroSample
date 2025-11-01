@@ -8,7 +8,6 @@ namespace Data
     public class GameData : SingletonScriptable<GameData>
     {
         [Header("Entities")]
-        public ParticleSystem exampleData;
         public Transform defaultBullet;
         
 #if UNITY_EDITOR

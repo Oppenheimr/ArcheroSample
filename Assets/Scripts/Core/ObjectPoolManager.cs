@@ -7,9 +7,7 @@ namespace Core
     public class ObjectPoolManager : SingletonBehavior<ObjectPoolManager>
     {
         #region Key Fields
-        private int _examplePoolKey;
         private int _bulletPoolKey;
-        private int _enemyBulletPoolKey;
         #endregion
         
         private void OnEnable()
@@ -26,23 +24,22 @@ namespace Core
             //Creations...
 
             #region Pool Create
-            _examplePoolKey = ObjectPooler.CreatePool(GameData.Instance.exampleData);
-            _bulletPoolKey = ObjectPooler.CreatePool(GameData.Instance.defaultBullet);
+            _bulletPoolKey = ObjectPooler.CreatePool(GameData.Instance.defaultBullet, 50);
             #endregion
         }
 
         #region Pool Getters
         
-        public static Transform GetExample()
+        public static Component GetBulletPool(Vector3 position, Quaternion rotation)
         {
-            var exampleComponent = ObjectPooler.GetPoolObject(Instance._examplePoolKey);
-            return (Transform)exampleComponent;
+            var bullet = ObjectPooler.GetPoolObject(Instance._bulletPoolKey);
+            bullet.transform.position = position;
+            bullet.transform.rotation = rotation;
+            return bullet;
         }
         
-        public static void PutPoolExample(Transform reference) => 
-            ObjectPooler.PutPoolObject(Instance._examplePoolKey, reference);
-        
-        public static Component GetBulletPool() => ObjectPooler.GetPoolObject(Instance._enemyBulletPoolKey);
+        public static void PutPoolBullet(Component reference) => 
+            ObjectPooler.PutPoolObject(Instance._bulletPoolKey, reference);
         
         #endregion
         

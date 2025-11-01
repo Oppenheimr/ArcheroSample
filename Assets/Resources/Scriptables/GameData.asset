@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc8ecf9bf3b83f347ad5dd35d7c4d15d, type: 3}
   m_Name: GameData
   m_EditorClassIdentifier: 
-  exampleData: {fileID: 0}
+  defaultBullet: {fileID: 1907855315266171007, guid: 89c1e8d232e55b149ad7014aa1936ffc, type: 3}

@@ -17,6 +17,9 @@ namespace Core
         
         public static readonly UnityEvent OnPlayerReady = new();
         public static readonly UnityEvent<int> OnUnitPurchased = new();
+        
+        
+        public static readonly UnityEvent OnEnemyDie = new();
         #endregion
 
         #region Event Methods
@@ -33,6 +36,8 @@ namespace Core
         
         public static void OnPlayerReadyEvent() => OnPlayerReady?.Invoke();
         public static void OnUnitPurchasedEvent(int unitId) => OnUnitPurchased?.Invoke(unitId);
+        
+        public static void OnEnemyDieEvent() => OnEnemyDie?.Invoke();
         #endregion
         
         public static void Reset()
@@ -49,6 +54,8 @@ namespace Core
             
             OnPlayerReady.RemoveAllListeners();
             OnUnitPurchased.RemoveAllListeners();
+            
+            OnEnemyDie.RemoveAllListeners();
         }
     }
 }

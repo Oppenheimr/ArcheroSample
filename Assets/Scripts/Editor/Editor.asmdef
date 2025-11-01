@@ -1,10 +1,8 @@
 {
-    "name": "Core",
+    "name": "Editor",
     "rootNamespace": "",
     "references": [
-        "GUID:46946a83c76ded146904643fa03298c5",
-        "GUID:c72abf0b34e27a84f893e3c6e992cc9a",
-        "GUID:dc03906c79ae85f4b828a62279e662ba"
+        "GUID:46946a83c76ded146904643fa03298c5"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

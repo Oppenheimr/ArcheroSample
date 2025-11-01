@@ -1,3 +1,6 @@
+using System;
+using Core;
+using GamePlay.Enemy;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityUtils.Attribute;
@@ -8,13 +11,39 @@ namespace GamePlay.Player
 {
     public class PlayerController : AutoAssignBehaviour
     {
-        public float idleCounter;
+        public EnemyController target;
         [SerializeField, AutoAssign] private Rigidbody _rigidbody;
         [SerializeField] private FloatingJoystick _joystick;
         [SerializeField] private float _speed = 10;
         [SerializeField] private float _smoothMoveMultiplier = 2;
-        public Transform target;
+        [SerializeField] private float _idleLimit = 0.2f;
         
+        private float _idleCounter;
+        private bool _lastFireCondition;
+
+        public bool FireCondition
+        {
+            get
+            {
+                var condition = _idleCounter > _idleLimit;
+                if (_lastFireCondition == condition) 
+                    return condition;
+                
+                _lastFireCondition = condition;
+                target = EnemySpawner.GetClosestEnemy(transform.position);
+
+                return condition;
+            }
+        }
+
+        private void Start()
+        {
+            EventDispatcher.OnEnemyDie.AddListener(() =>
+            {
+                target = EnemySpawner.GetClosestEnemy(transform.position);
+            });
+        }
+
         private void Update()
         {
             var vertical = _joystick.Vertical;
@@ -25,14 +54,15 @@ namespace GamePlay.Player
             transform.position += movement;
             _rigidbody.AddForce(movement * _smoothMoveMultiplier, ForceMode.Impulse);
             
-            idleCounter = movement.sqrMagnitude == 0 ? idleCounter + Time.deltaTime : 0;
-            
-            //var target = References.TargetIndicator.GetTarget(); //TODO buraya target eklenecek
+            _idleCounter = movement.sqrMagnitude == 0 ? _idleCounter + Time.deltaTime : 0;
+
+            if (!FireCondition && inputVector.magnitude == 0)
+                target = EnemySpawner.GetClosestEnemy(transform.position);
             
             if (target != null)
             {
-                if (idleCounter > 0.1f)
-                    transform.LookAtWithoutY(target);
+                if (_idleCounter > 0.1f)
+                    transform.LookAtWithoutY(target.transform);
                 else
                     LookAtInputVector(inputVector);
             }
