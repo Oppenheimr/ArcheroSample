@@ -45,7 +45,7 @@ namespace GamePlay.Skill
             var next = EnemySpawner.GetClosestEnemyExcept(from, enemy);
             if (next == null) return;
 
-            // 1) Yeni balistik hız
+            // Yeni hız vektörü
             Vector3 v0 = ProjectileHelper.ComputeBallisticVelocity(
                 origin: from,
                 target: next.transform.position,
@@ -53,21 +53,11 @@ namespace GamePlay.Skill
                 gravityPos: -Physics.gravity.y
             );
 
-            // 2) Yön doğrultusunda küçük bir ayrılma
-            const float separateDist = 1.35f; // 0.1f–0.5f arası deneyebilirsin
-            Vector3 sepPos = from + v0.normalized * separateDist;
-            rb.position = sepPos;
-
-            // 3) Anlık tekrar çarpışmayı engelle
-            // if (runtime.Collider && enemy.TryGetComponent<Collider>(out var enemyCol))
-            // {
-            //     Physics.IgnoreCollision(runtime.Collider, enemyCol, true);
-            //     // Bomb üzerinde kısa süre sonra geri açalım
-            //     if (runtime.OwnerBomb != null)
-            //         runtime.OwnerBomb.StartCoroutine(runtime.OwnerBomb.UnignoreAfter(runtime.Collider, enemyCol, 0.08f));
-            // }
-
-            // 4) Yeni hızı ver
+            //Yön doğrultusunda ileri alalım biraz
+            // const float separateDist = 0.35f;
+            // Vector3 sepPos = from + v0.normalized * separateDist;
+            // rb.position = sepPos;
+            //
             rb.linearVelocity = v0;
             rb.angularVelocity = Vector3.zero;
             rb.WakeUp();

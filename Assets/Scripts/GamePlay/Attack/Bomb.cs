@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using Core;
 using GamePlay.Enemy;
@@ -13,11 +14,19 @@ namespace GamePlay.Attack
     {
         [AutoAssign] public Rigidbody bombRigid;
         [AutoAssign] public Collider bombCollider;
-
+        
         private float _damage;
         private BulletRuntime _runtime;
         private List<IBulletEffect> _effects;
-
+        private const float PoolDelay = 2f;
+        
+        public void Setup(float damage, BulletRuntime runtime, List<IBulletEffect> effects)
+        {
+            _damage = damage;
+            _runtime = runtime;
+            _effects = effects; // referans tutuyoruz; istersen kopya al
+        }
+        
         private void OnCollisionEnter(Collision other) => OnEnter(other.collider);
         private void OnTriggerEnter(Collider other) => OnEnter(other);
 
@@ -37,14 +46,15 @@ namespace GamePlay.Attack
             
             // Eğer bounce kalmadıysa havuza geri koy
             if (bounceLeft <= 0)
-                ObjectPooler.PutPoolObject(SimplePlayerGun.BulletPoolKey, this);
+                StartCoroutine(PutPoolDelayed());
         }
-
-        public void Setup(float damage, BulletRuntime runtime, List<IBulletEffect> effects)
+        
+        private IEnumerator PutPoolDelayed()
         {
-            _damage = damage;
-            _runtime = runtime;
-            _effects = effects; // referans tutuyoruz; istersen kopya al
+            bombCollider.isTrigger = false;
+            yield return new WaitForSeconds(PoolDelay);
+            bombCollider.isTrigger = true;
+            ObjectPooler.PutPoolObject(SimplePlayerGun.BulletPoolKey, this);
         }
     }
 }

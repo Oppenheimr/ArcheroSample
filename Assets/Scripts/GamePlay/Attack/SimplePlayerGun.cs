@@ -22,14 +22,13 @@ namespace GamePlay.Attack
         [SerializeField] private float _angle = 45;
         
         public static int BulletPoolKey;
-        
         private Coroutine _loop;
 
         protected virtual void OnEnable()
         {
             if (_loop != null) StopCoroutine(_loop);
             _loop = StartCoroutine(ShootLoop());
-            BulletPoolKey = ObjectPooler.CreatePool(_bomb, 50);
+            BulletPoolKey = ObjectPooler.CreatePool(_bomb, 300);
         }
 
         private IEnumerator ShootLoop()
@@ -84,42 +83,9 @@ namespace GamePlay.Attack
                     collider = insBullet.bombCollider,
                     angle = _angle
                 };
-
-                insBullet.bombCollider.isTrigger = false;
+                
                 insBullet.Setup(context.BaseDamage, runtime, context.BulletEffects);
             }
-        }
-        
-        public static double CalculateSpeed(double height, double horizontalDistance, double angle, double gravity)
-        {
-            angle = angle * Mathf.Deg2Rad; // Açıyı dereceden radyana çevir
-            return (Math.Sqrt(gravity) * horizontalDistance * (1 / Math.Cos(angle))) / Math.Sqrt(2 * height + 2 * horizontalDistance * Math.Tan(angle));
-        }
-        
-        private Vector3 Direction(Vector3 target)
-        {
-            var position = _firePoint.position;
-            var targetPosition = target;
-                
-            // Hedef ile mevcut konum arasındaki vektörü hesapla
-            Vector3 targetDirection = targetPosition - new Vector3(position.x, targetPosition.y, position.z);
-
-            // Yönü yukarı doğru _angle kadar döndür
-            Quaternion rotation = Quaternion.AngleAxis(_angle, RotateVectorAroundY(targetDirection, 270).normalized);
-            Vector3 rotatedDirection = rotation * targetDirection;
-
-            return rotatedDirection.normalized;
-        }
-        
-        public static Vector3 RotateVectorAroundY(Vector3 vector, float degree)
-        {
-            // Y ekseninde 90 derece döndürme için birim bir dönüş quaternion'i oluştur
-            Quaternion rotation = Quaternion.Euler(0, degree, 0);
-
-            // Vektörü dönüştür
-            Vector3 rotatedVector = rotation * vector;
-
-            return rotatedVector;
         }
     }
 }
