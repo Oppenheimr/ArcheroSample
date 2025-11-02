@@ -1,8 +1,6 @@
-using System;
 using Core;
 using GamePlay.Enemy;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityUtils.Attribute;
 using UnityUtils.BaseClasses;
 using UnityUtils.Extensions;
@@ -11,7 +9,7 @@ namespace GamePlay.Player
 {
     public class PlayerController : AutoAssignBehaviour
     {
-        public EnemyController target;
+        [HideInInspector] public EnemyController target;
         [SerializeField, AutoAssign] private Rigidbody _rigidbody;
         [SerializeField] private FloatingJoystick _joystick;
         [SerializeField] private float _speed = 10;

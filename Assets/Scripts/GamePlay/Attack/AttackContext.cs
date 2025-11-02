@@ -1,22 +1,22 @@
 using System.Collections.Generic;
 using GamePlay.Skill;
+using GamePlay.Skill.Effect;
 
-namespace Data
+namespace GamePlay.Attack
 {
     public sealed class AttackContext
     {
         // Silah taban değerleri
-        public float BaseDamage;
-        public float BaseFireDelay;   // saniye
-        public float Angle;           // tepe açısı
-        public float BaseSpeed;
+        public float baseDamage;
+        public float baseFireDelay;
+        public float angle;
 
         // Stratejiler tarafından ayarlananlar
-        public int Shots = 1;                      // kaç mermi
-        public int BounceCount = 0;                // sekme sayısı
-        public float BurnDuration = 0f;            // DOT süresi
-        public float BurnDps = 0f;                 // saniyelik hasar
-        public float FireDelay;                    // uygulanmış atış gecikmesi
-        public readonly List<IBulletEffect> BulletEffects = new();
+        public int shots = 1;
+        public int bounceCount = 0;
+        public float burnDuration = 0f;
+        public float burnDamagePerSecond = 0f;
+        public float fireDelay;
+        public readonly List<IProjectileEffect> projectileEffects = new();
     }
 }

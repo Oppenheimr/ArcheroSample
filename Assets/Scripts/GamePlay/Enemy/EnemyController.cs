@@ -28,8 +28,8 @@ namespace GamePlay.Enemy
             _currentHealth = _maxHealth;
             _healthBar.value = _currentHealth;
             
-            if (gameObject.TryGetComponent(out BurnComponent burn))
-                Destroy(burn);
+            if (gameObject.TryGetComponent(out BurnEffectComponent burn))
+                burn.enabled = false;
         }
         
         public void TakeDamage(float damage)
@@ -37,14 +37,7 @@ namespace GamePlay.Enemy
             _currentHealth -= damage;
             _healthBar.value = _currentHealth;
             if (_currentHealth <= 0)
-            {
-                Die();
-            }
-        }
-
-        private void Die()
-        {
-            EventDispatcher.OnEnemyDieEvent();
+                EventDispatcher.OnEnemyDieEvent();
         }
     }
 }

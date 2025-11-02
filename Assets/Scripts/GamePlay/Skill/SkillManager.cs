@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using Core;
 using Data;
+using GamePlay.Attack;
+using GamePlay.Skill.Strategy;
 using UnityEngine;
 using UnityUtils.BaseClasses;
 
@@ -42,17 +44,13 @@ namespace GamePlay.Skill
         {
             var ctx = new AttackContext
             {
-                BaseDamage = baseDamage,
-                BaseFireDelay = baseDelay,
-                FireDelay = baseDelay,
-                BaseSpeed = baseSpeed,
-                Angle = angle
+                baseDamage = baseDamage,
+                baseFireDelay = baseDelay,
+                fireDelay = baseDelay,
+                angle = angle
             };
 
-            var rage = new RageSnapshot(
-                _active.Contains(SkillType.Rage),
-                2f, 2f, 2f, 2f // “ikiye katla” olarak düşünülebilir; örnek alanlar
-            );
+            var rage = _active.Contains(SkillType.Rage);
 
             // Stratejileri deterministik bir sırada uygula
             ApplyIfActive(SkillType.MultiShot, ctx, rage);
@@ -64,10 +62,10 @@ namespace GamePlay.Skill
             return ctx;
         }
 
-        private void ApplyIfActive(SkillType type, AttackContext ctx, RageSnapshot rage)
+        private void ApplyIfActive(SkillType type, AttackContext ctx, bool isRage)
         {
             if (_active.Contains(type))
-                _all[type].Apply(ctx, rage);
+                _all[type].Apply(ctx, isRage);
         }
     }
 }

@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using Core;
-using Data;
 using GamePlay.Player;
 using GamePlay.Skill;
 using UnityEngine;
@@ -11,24 +9,25 @@ namespace GamePlay.Attack
 {
     public class SimplePlayerGun : MonoBehaviour
     {
+        public static int ProjectilePoolKey;
         public bool fire = true;
         public float baseDamage = 15;
         public float baseBulletSpeed = 30;
         
         [SerializeField, AutoAssign] private PlayerController _controller;
         [SerializeField] private Transform _firePoint;
-        [SerializeField] private Bomb _bomb;
+        [SerializeField] private Projectile _projectile;
         [SerializeField] private float _fireDelay = 2.3f;
         [SerializeField] private float _angle = 45;
         
-        public static int BulletPoolKey;
         private Coroutine _loop;
+        private const float MultipleProjectileSpacing = 0.4f;
 
         protected virtual void OnEnable()
         {
             if (_loop != null) StopCoroutine(_loop);
             _loop = StartCoroutine(ShootLoop());
-            BulletPoolKey = ObjectPooler.CreatePool(_bomb, 300);
+            ProjectilePoolKey = ObjectPooler.CreatePool(_projectile, 300);
         }
 
         private IEnumerator ShootLoop()
@@ -37,8 +36,7 @@ namespace GamePlay.Attack
             {
                 // UI’daki durumdan AttackContext’i oluştur
                 var context = SkillManager.Instance.CreateContext(baseDamage, _fireDelay, baseBulletSpeed, _angle);
-
-                yield return new WaitForSeconds(context.FireDelay);
+                yield return new WaitForSeconds(context.fireDelay);
 
                 if (!_controller.FireCondition || !fire)
                     continue;
@@ -49,42 +47,38 @@ namespace GamePlay.Attack
 
         private void ShootWithContext(AttackContext context)
         {
-            float spacing = 0.4f;
-            int shotCount = context.Shots;
-            float totalWidth = (shotCount - 1) * spacing;
-            float halfWidth = totalWidth / 2f;
+            var totalWidth = (context.shots - 1) * MultipleProjectileSpacing;
+            var halfWidth = totalWidth / 2f;
 
-            for (int i = 0; i < shotCount; i++)
+            for (var i = 0; i < context.shots; i++)
             {
-                float offset = (i * spacing) - halfWidth;
-                Vector3 spawnPos = _firePoint.position + _firePoint.right * offset;
+                var offset = (i * MultipleProjectileSpacing) - halfWidth;
+                var spawnPos = _firePoint.position + _firePoint.right * offset;
 
-                var insBullet = (Bomb)ObjectPooler.GetPoolObject(BulletPoolKey);
-                insBullet.transform.position = spawnPos;
-                insBullet.transform.rotation = _firePoint.rotation;
+                var insProjectile = (Projectile)ObjectPooler.GetPoolObject(ProjectilePoolKey);
+                insProjectile.transform.position = spawnPos;
+                insProjectile.transform.rotation = _firePoint.rotation;
 
-                // 🔹 Balistik hız vektörü helper’dan
-                Vector3 v0 = ProjectileHelper.ComputeBallisticVelocity(
+                //Balistik hız vektörü helper’dan
+                var velocity = ProjectileHelper.ComputeBallisticVelocity(
                     origin: spawnPos,
                     target: _controller.target.transform.position,
-                    angleDeg: context.Angle,
+                    angleDeg: context.angle,
                     gravityPos: -Physics.gravity.y
                 );
 
-                insBullet.bombRigid.linearVelocity = v0;
+                insProjectile.projectileRigid.linearVelocity = velocity;
 
-                var runtime = new BulletRuntime
+                var runtime = new ProjectileRuntimeData
                 {
-                    bounceLeft = context.BounceCount,
-                    burnDuration = context.BurnDuration,
-                    burnDamagePerSecond = context.BurnDps,
-                    currentOrigin = _firePoint,
-                    rigidbody = insBullet.bombRigid,
-                    collider = insBullet.bombCollider,
+                    bounceLeft = context.bounceCount,
+                    burnDuration = context.burnDuration,
+                    burnDamagePerSecond = context.burnDamagePerSecond,
+                    rigidbody = insProjectile.projectileRigid,
                     angle = _angle
                 };
                 
-                insBullet.Setup(context.BaseDamage, runtime, context.BulletEffects);
+                insProjectile.Setup(context.baseDamage, runtime, context.projectileEffects);
             }
         }
     }

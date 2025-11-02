@@ -6,7 +6,6 @@ namespace Core
     {
         public static void Initialize()
         {
-            ObjectPoolManager.Initialize(CoreManager.Instance.transform);
             Audio.Initialize();
         }
         

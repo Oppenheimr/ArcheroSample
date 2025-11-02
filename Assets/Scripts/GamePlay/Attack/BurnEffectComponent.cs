@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace GamePlay.Attack
 {
-    public class BurnComponent : MonoBehaviour
+    public class BurnEffectComponent : MonoBehaviour
     {
         private EnemyController _controller;
         private float _damagePerSecondAccumulated;
@@ -11,7 +11,7 @@ namespace GamePlay.Attack
 
         public void Apply(float damagePerSecond, float duration)
         {
-            // Stack’lenebilir: DPS toplanır, süre büyük olanı al
+            // Stacklenebilir: damagePerSecond toplanır, süre büyük olanı al
             _damagePerSecondAccumulated += damagePerSecond;
             _timeLeft = Mathf.Max(_timeLeft, duration);
             enabled = true;

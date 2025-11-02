@@ -1,9 +1,7 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Core;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityUtils.BaseClasses;
 using Random = UnityEngine.Random;
 
@@ -16,6 +14,7 @@ namespace GamePlay.Enemy
         [SerializeField] private Transform _maxSpawnPoint;
         [SerializeField] private float _enemyCount = 5;
 
+        private const float MinDistanceBetweenEnemies = 1.25f;
         private readonly List<EnemyController> _enemies = new();
 
         private Vector3 GetRandomSpawnPoint =>
@@ -27,9 +26,10 @@ namespace GamePlay.Enemy
             get
             {
                 var spawnPoint = GetRandomSpawnPoint;
-                return _enemies.Where(enemy => enemy.IsAlive).Any(enemy => 
-                    Vector3.Distance(spawnPoint, enemy.transform.position) <= 1.25f) ? 
-                    SpawnPoint : spawnPoint;
+                return _enemies.Where(enemy => enemy.IsAlive).Any(enemy =>
+                    Vector3.Distance(spawnPoint, enemy.transform.position) <= MinDistanceBetweenEnemies)
+                    ? SpawnPoint
+                    : spawnPoint;
             }
         }
 
@@ -47,7 +47,7 @@ namespace GamePlay.Enemy
 
         private void SpawnEnemies()
         {
-            for (int i = 0; i < _enemyCount; i++)
+            for (var i = 0; i < _enemyCount; i++)
                 _enemies.Add(Instantiate(_enemy, SpawnPoint, Quaternion.identity));
         }
 
@@ -73,17 +73,17 @@ namespace GamePlay.Enemy
         public static EnemyController GetClosestEnemyExcept(Vector3 position, EnemyController except)
         {
             EnemyController closest = null;
-            float bestSqr = float.MaxValue;
+            var bestSqr = float.MaxValue;
 
             foreach (var enemy in Instance._enemies)
             {
                 if (!enemy.IsAlive || enemy == except) continue;
-                float sqr = (enemy.transform.position - position).sqrMagnitude;
-                if (sqr < bestSqr)
-                {
-                    bestSqr = sqr;
-                    closest = enemy;
-                }
+                var sqr = (enemy.transform.position - position).sqrMagnitude;
+                
+                if (!(sqr < bestSqr)) 
+                    continue;
+                bestSqr = sqr;
+                closest = enemy;
             }
 
             return closest;
