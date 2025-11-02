@@ -1,71 +1,73 @@
 using System;
 using System.Collections.Generic;
 using Core;
-using Data;
 using GamePlay.Attack;
 using GamePlay.Skill.Strategy;
-using UnityEngine;
-using UnityUtils.BaseClasses;
 
 namespace GamePlay.Skill
 {
-    public sealed class SkillManager : SingletonBehavior<SkillManager>
+    public static class SkillManager
     {
-        private readonly Dictionary<SkillType, ISkillStrategy> _all = new();
-        private readonly HashSet<SkillType> _active = new();
+        private static readonly Dictionary<SkillType, ISkillStrategy> _all = new();
+        private static SkillType _active = SkillType.None;
+        private static bool _initialized;
 
-        protected override void Awake()
+        public static void Initialize()
         {
-            base.Awake();
-            // Factory Method
+            if (_initialized) return;
+            _initialized = true;
+
             _all[SkillType.MultiShot] = new MultiShotStrategy();
             _all[SkillType.ReflectiveShot] = new ReflectiveStrategy();
             _all[SkillType.FireShot] = new FireShotStrategy();
             _all[SkillType.FireRate] = new FireRateStrategy();
             _all[SkillType.Rage] = new RageStrategy();
-
-            // Observer: UI eventlerini dinle
-            EventDispatcher.OnSkillSelected.AddListener(OnSkillToggle);
+            EventDispatcher.OnSkillSelected.AddListener(Toggle);
         }
 
-        private void OnDestroy()
+        public static void Dispose()
         {
-            EventDispatcher.OnSkillSelected.AddListener(OnSkillToggle);
+            if (!_initialized) return;
+            _all.Clear();
+            _active = SkillType.None;
+            _initialized = false;
         }
 
-        private void OnSkillToggle(int skillInt, bool isOn)
+        public static void Toggle(int skillId, bool active)
         {
-            var st = (SkillType)skillInt;
-            if (isOn) _active.Add(st);
-            else _active.Remove(st);
+            var skillType = (SkillType)skillId;
+            if (active) _active |= skillType;
+            else _active &= ~skillType;
         }
+        
+        private static bool Has(SkillType st) => (_active & st) != 0;
 
-        public AttackContext CreateContext(float baseDamage, float baseDelay, float baseSpeed, float angle)
+        public static AttackContext CreateContext(float baseDamage, float baseDelay, float angle)
         {
             var ctx = new AttackContext
             {
                 baseDamage = baseDamage,
                 baseFireDelay = baseDelay,
                 fireDelay = baseDelay,
-                angle = angle
+                angle = angle,
             };
 
-            var rage = _active.Contains(SkillType.Rage);
-
-            // Stratejileri deterministik bir sırada uygula
+            var rage = Has(SkillType.Rage);
+            // Deterministik sırada uygula:
             ApplyIfActive(SkillType.MultiShot, ctx, rage);
             ApplyIfActive(SkillType.ReflectiveShot, ctx, rage);
             ApplyIfActive(SkillType.FireShot, ctx, rage);
             ApplyIfActive(SkillType.FireRate, ctx, rage);
-            ApplyIfActive(SkillType.Rage, ctx, rage); // Rage en sonda/no-op
+            ApplyIfActive(SkillType.Rage, ctx, rage);
 
             return ctx;
         }
 
-        private void ApplyIfActive(SkillType type, AttackContext ctx, bool isRage)
+        private static void ApplyIfActive(SkillType type, AttackContext context, bool isRage)
         {
-            if (_active.Contains(type))
-                _all[type].Apply(ctx, isRage);
+            if ((_active & type) == 0) return;
+            if (_all.TryGetValue(type, out var strategy))
+                strategy.Apply(context, isRage);
         }
     }
 }

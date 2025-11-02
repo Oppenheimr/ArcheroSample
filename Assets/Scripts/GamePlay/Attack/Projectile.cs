@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using Core;
+using Cysharp.Threading.Tasks;
 using GamePlay.Enemy;
 using GamePlay.Skill;
 using GamePlay.Skill.Effect;
@@ -19,19 +21,36 @@ namespace GamePlay.Attack
         private ProjectileRuntimeData _runtimeData;
         private List<IProjectileEffect> _effects;
         private const float PoolDelay = 2f;
+        private const float Lifetime = 5f; 
         
         private const float MinOrientSpeedSqr = 0.01f;
         private const float RotationSlerpSpeed = 30f;
         private readonly Vector3 _modelRotationOffset = Vector3.zero;
         private bool _movementCompleted;
         
+        // Her enable'da yeni bir ömür döngüsü token'ı
+        private CancellationTokenSource _reuseCts;
+        
         private void OnEnable()
         {
+            _reuseCts = new CancellationTokenSource();
+            
             // Havuzdan alınınca rotation'ı sıfırla/veya önceki spinin etkisini sil
             if (projectileRigid == null) 
                 return;
             projectileRigid.angularVelocity = Vector3.zero;
             projectileRigid.WakeUp();
+            LifetimeCountdownAsync(_reuseCts.Token).Forget();
+        }
+        
+        private void OnDisable()
+        {
+            // Bu projectile yeniden havuza dönerken bekleyen async işleri iptal et
+            if (_reuseCts == null)
+                return;
+            _reuseCts.Cancel();
+            _reuseCts.Dispose();
+            _reuseCts = null;
         }
         
         private void OnCollisionEnter(Collision other) => OnEnter(other.collider);
@@ -74,24 +93,51 @@ namespace GamePlay.Attack
             enemy.TakeDamage(_damage);
 
             //Hit öncesi kalan bounce sayısını alalım
-            var bounceLeft = _runtimeData.bounceLeft;
+            var bounceLeftBefore = _runtimeData.bounceLeft;
             
             // Bounce ve diğer efektleri tetikle
             foreach (var effect in _effects)
                 effect.OnHit(enemy, _runtimeData);
             
             // Eğer bounce kalmadıysa havuza geri koy
-            if (bounceLeft <= 0)
-                StartCoroutine(PutPoolDelayed());
+            if (bounceLeftBefore <= 0)
+                PutPoolDelayedAsync(_reuseCts?.Token ?? this.GetCancellationTokenOnDestroy()).Forget();
         }
         
-        private IEnumerator PutPoolDelayed()
+        private async UniTaskVoid LifetimeCountdownAsync(CancellationToken token)
         {
-            projectileCollider.isTrigger = false;
+            try
+            {
+                // 5 saniye bekle, eğer iptal edilmezse mermiyi havuza gönder
+                await UniTask.Delay(System.TimeSpan.FromSeconds(Lifetime), DelayType.DeltaTime, PlayerLoopTiming.Update, token);
+            }
+            catch (System.OperationCanceledException) { return; }
+
+            if (!token.IsCancellationRequested)
+                ObjectPooler.PutPoolObject(SimplePlayerGun.ProjectilePoolKey, this);
+        }
+        
+        private async UniTaskVoid PutPoolDelayedAsync(CancellationToken token)
+        {
+            if (projectileCollider) projectileCollider.isTrigger = false;
             _movementCompleted = true;
-            yield return new WaitForSeconds(PoolDelay);
-            projectileCollider.isTrigger = true;
-            ObjectPooler.PutPoolObject(SimplePlayerGun.ProjectilePoolKey, this);
+            
+            try
+            {
+                await UniTask.Delay(
+                    System.TimeSpan.FromSeconds(PoolDelay),
+                    DelayType.DeltaTime,
+                    PlayerLoopTiming.Update,
+                    token
+                );
+            }
+            catch (System.OperationCanceledException) { return; }
+
+            if (projectileCollider) projectileCollider.isTrigger = true;
+
+            // Token iptal edilmediyse havuza iade et
+            if (!token.IsCancellationRequested)
+                ObjectPooler.PutPoolObject(SimplePlayerGun.ProjectilePoolKey, this);
         }
     }
 }

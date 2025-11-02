@@ -1,5 +1,8 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
+using System.Threading;
 using Core;
+using Cysharp.Threading.Tasks;
 using GamePlay.Player;
 using GamePlay.Skill;
 using UnityEngine;
@@ -12,38 +15,48 @@ namespace GamePlay.Attack
         public static int ProjectilePoolKey;
         public bool fire = true;
         public float baseDamage = 15;
-        public float baseBulletSpeed = 30;
-        
+
         [SerializeField, AutoAssign] private PlayerController _controller;
         [SerializeField] private Transform _firePoint;
         [SerializeField] private Projectile _projectile;
         [SerializeField] private float _fireDelay = 2.3f;
         [SerializeField] private float _angle = 45;
         
-        private Coroutine _loop;
+        private CancellationTokenSource _shootCts;
         private const float MultipleProjectileSpacing = 0.4f;
-
-        protected virtual void OnEnable()
+        
+        private void OnEnable()
         {
-            if (_loop != null) StopCoroutine(_loop);
-            _loop = StartCoroutine(ShootLoop());
-            ProjectilePoolKey = ObjectPooler.CreatePool(_projectile, 300);
+            if (ProjectilePoolKey == 0)
+                ProjectilePoolKey = ObjectPooler.CreatePool(_projectile, 300);
+            _shootCts = new CancellationTokenSource();  
+            ShootLoopAsync(_shootCts.Token).Forget();
+            SkillManager.Initialize();
         }
 
-        private IEnumerator ShootLoop()
+        private void OnDisable()
         {
-            while (true)
+            SkillManager.Dispose();
+        }
+        
+        private async UniTaskVoid ShootLoopAsync(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
             {
-                // UI’daki durumdan AttackContext’i oluştur
-                var context = SkillManager.Instance.CreateContext(baseDamage, _fireDelay, baseBulletSpeed, _angle);
-                yield return new WaitForSeconds(context.fireDelay);
+                var context = SkillManager.CreateContext(baseDamage, _fireDelay, _angle);
+                await UniTask.Delay(TimeSpan.FromSeconds(context.fireDelay),
+                    DelayType.DeltaTime, PlayerLoopTiming.Update, token);
 
+                if (token.IsCancellationRequested) break;
                 if (!_controller.FireCondition || !fire)
+                {
+                    await UniTask.Yield(PlayerLoopTiming.Update, token);
                     continue;
-
+                }
                 ShootWithContext(context);
             }
         }
+
 
         private void ShootWithContext(AttackContext context)
         {
